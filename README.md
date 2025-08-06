@@ -34,6 +34,9 @@ fire-tree.bat [directory]
 # Show file sizes
 ./fire-tree.sh --size
 
+# Show total size of all files
+./fire-tree.sh --total
+
 # Show folder counts (files, directories)
 ./fire-tree.sh --count
 
@@ -41,11 +44,12 @@ fire-tree.bat [directory]
 ./fire-tree.sh --sort size
 
 # Combine options
-./fire-tree.sh --size --count /path/to/folder
+./fire-tree.sh --size --total --count /path/to/folder
 ```
 
 ## Options
 - `--size` - Display file sizes in B/K/M format
+- `--total` - Show total size of all files in the directory tree
 - `--count` - Show folder contents count (files, dirs)
 - `--sort size` - Sort files by size (largest first)
 

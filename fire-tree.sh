@@ -6,7 +6,9 @@
 # Options
 SHOW_SIZE=false
 SHOW_COUNT=false
+SHOW_TOTAL=false
 SORT_BY="name"
+TOTAL_SIZE=0
 
 # Fire colors using ANSI escape codes
 RED='\033[91m'
@@ -55,7 +57,7 @@ count_items() {
     
     while IFS= read -r -d '' item; do
         local basename=$(basename "$item")
-        if [[ -d "$item" && ( "$basename" == ".git" || "$basename" == "node_modules" || "$basename" == "__pycache__" || "$basename" == "build" || "$basename" == "dist" || "$basename" == ".vscode" ) ]]; then
+        if [[ -d "$item" && ("$basename" == ".git" || "$basename" == "node_modules" || "$basename" == "__pycache__" || "$basename" == "build" || "$basename" == "dist" || "$basename" == ".vscode" ) ]]; then
             continue
         fi
         if [[ -d "$item" ]]; then
@@ -68,6 +70,11 @@ count_items() {
     echo "$files $dirs"
 }
 
+calculate_total_size() {
+    local dir="$1"
+    find "$dir" -type f \(! "$basename" == ".git" ! -path "*/node_modules/*" ! -path "*/__pycache__/*" ! -path "*/build/*" ! -path "*/dist/*" ! -path "*/.vscode/*" \) -exec stat -c%s {} + 2>/dev/null | awk '{sum+=$1} END {print sum+0}'
+}
+
 draw_tree() {
     local dir="$1"
     local prefix="$2"
@@ -78,7 +85,7 @@ draw_tree() {
     while IFS= read -r -d '' item; do
         local basename=$(basename "$item")
         # Skip excluded folders
-        if [[ -d "$item" && ( "$basename" == ".git" || "$basename" == "node_modules" || "$basename" == "__pycache__" || "$basename" == "build" || "$basename" == "dist" || "$basename" == ".vscode" ) ]]; then
+        if [[ -d "$item" && ("$basename" == ".git" || "$basename" == "node_modules" || "$basename" == "__pycache__" || "$basename" == "build" || "$basename" == "dist" || "$basename" == ".vscode" ) ]]; then
             continue
         fi
         items+=("$item")
@@ -158,6 +165,12 @@ draw_tree() {
             if $SHOW_SIZE; then
                 local size=$(get_file_size "$item")
                 file_info=" ($(format_size $size))"
+                if $SHOW_TOTAL; then
+                    TOTAL_SIZE=$((TOTAL_SIZE + size))
+                fi
+            elif $SHOW_TOTAL; then
+                local size=$(get_file_size "$item")
+                TOTAL_SIZE=$((TOTAL_SIZE + size))
             fi
             
             if $is_last_item; then
@@ -175,6 +188,7 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --size) SHOW_SIZE=true; shift ;;
         --count) SHOW_COUNT=true; shift ;;
+        --total) SHOW_TOTAL=true; shift ;;
         --sort) SORT_BY="$2"; shift 2 ;;
         -*) echo "Unknown option: $1"; exit 1 ;;
         *) start_dir="$1"; shift ;;
@@ -190,5 +204,9 @@ fi
 
 echo -e "${RED}${FIRE}${RESET} $(basename "$(realpath "$start_dir")")/"
 draw_tree "$start_dir" "" true
+
+if $SHOW_TOTAL; then
+    echo -e "\n${ORANGE}📊 Total size: $(format_size $TOTAL_SIZE)${RESET}"
+fi
 
 echo ""
